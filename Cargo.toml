@@ -1,0 +1,12 @@
+[package]
+name = "terr"
+version = "0.1.0"
+authors = ["Diggory Hardy <git@dhardy.name>"]
+edition = "2018"
+description = "Procedural terrain techniques"
+
+[dependencies]
+nalgebra = "0.18"
+
+[dev-dependencies]
+kiss3d = "0.19"
