@@ -6,9 +6,10 @@ edition = "2018"
 description = "Procedural terrain techniques"
 
 [dependencies]
+alga = "0.9"
 nalgebra = "0.18"
 ncollide3d = "0.19"
+rand = "0.6"
 
 [dev-dependencies]
 kiss3d = "0.19"
-rand = "0.6"

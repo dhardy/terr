@@ -2,10 +2,10 @@
 //! This cannot generate any features but may be useful to add a little
 //! variation on top of other data.
 
-use nalgebra::{Point3, Vector3, Translation3};
+use terr::height::{Height, Plain};
+use nalgebra::{Point3, Vector2, Vector3, Translation3};
 use ncollide3d::procedural;
 use kiss3d::{window::Window, light::Light};
-use rand::prelude::*;
 use rand::distributions::Normal;
 
 fn main() {
@@ -13,15 +13,18 @@ fn main() {
     window.set_light(Light::StickToCamera);
     
     let distr = Normal::new(0., 0.2);
+    let height = Plain::new().add_noise(distr);
     let mut rng = rand::thread_rng();
     
     let mut quad = procedural::quad::<f32>(100., 100., 100, 100);
+    
     for p in &mut quad.coords {
         // Quad is created with z=0, but y is up in kiss3d's camera. We have to
         // rotate all three coords to keep the right side up.
         p.z = p.x;
         p.x = p.y;
-        p.y = distr.sample(&mut rng) as f32;    // 0.0 + noise
+        // FIXME: use Normal::<f32> distribution
+        p.y = height.sample(Vector2::new(p.x as f64, p.z as f64), &mut rng) as f32;    // 0.0 + noise
     }
     quad.recompute_normals();
     
