@@ -41,7 +41,6 @@ fn main() {
         p.z = p.x;
         p.x = p.y;
         p.y = temp;
-//         println!("{}, {}, {}", p.x, p.y, p.z);
     }
     quad.recompute_normals();
     
