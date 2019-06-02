@@ -12,7 +12,7 @@ use nalgebra as na;
 use na::{RealField, geometry::{Point2, Point3}};
 use ncollide3d::procedural::{TriMesh, IndexBuffer};
 
-pub use displacement::midpoint_displacement;
+pub use displacement::{midpoint_displacement, diamond_square};
 
 mod displacement;
 
