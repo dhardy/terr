@@ -2,8 +2,12 @@
 name = "terr"
 version = "0.1.0"
 authors = ["Diggory Hardy <git@dhardy.name>"]
+license = "MIT/Apache-2.0"
 edition = "2018"
 description = "Procedural terrain techniques"
+keywords = ["procedural", "terrain"]
+categories = ["algorithms", "game-engines"]
+
 
 [dependencies]
 nalgebra = "0.18"
