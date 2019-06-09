@@ -5,6 +5,8 @@ Procedural terrain generation algorithms.
 
 ![Example](/fractal.png?raw=true)
 
+[Changelog](CHANGELOG.md)
+
 Examples:
 
 -   `flat`: just flat
