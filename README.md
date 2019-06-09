@@ -1,6 +1,8 @@
 Terr
 ====
 
+[![Build Status](https://travis-ci.org/dhardy/terr.svg)](https://travis-ci.org/dhardy/terr)
+
 Procedural terrain generation algorithms.
 
 ![Example](/fractal.png?raw=true)

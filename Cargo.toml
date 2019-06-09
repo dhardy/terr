@@ -1,13 +1,18 @@
 [package]
 name = "terr"
 version = "0.1.0"
+edition = "2018"
 authors = ["Diggory Hardy <git@dhardy.name>"]
 license = "MIT/Apache-2.0"
-edition = "2018"
+readme = "README.md"
+repository = "https://github.com/dhardy/terr"
 description = "Procedural terrain techniques"
+# documentation = ""
 keywords = ["procedural", "terrain"]
 categories = ["algorithms", "game-engines"]
 
+[badges]
+travis-ci = { repository = "dhardy/terr" }
 
 [dependencies]
 nalgebra = "0.18"
