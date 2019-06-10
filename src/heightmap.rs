@@ -9,8 +9,9 @@
 //! Functionality based on heightmaps
 
 use nalgebra as na;
-use na::{RealField, geometry::{Point2, Point3}};
+use na::{DMatrix, Dynamic, Vector3, RealField, geometry::{Point2, Point3}};
 use ncollide3d::procedural::{TriMesh, IndexBuffer};
+use ncollide3d::shape::HeightField;
 
 pub use displacement::{midpoint_displacement, diamond_square};
 
@@ -56,6 +57,15 @@ impl<F: Clone> Heightmap<F> {
 }
 
 impl<F: RealField> Heightmap<F> {
+    // Convert to a HeightField
+    pub fn to_heightfield(&self, width: F, height: F) -> HeightField<F> {
+        let rows = Dynamic::new(self.len1());
+        let cols = Dynamic::new(self.len0());
+        let heights = DMatrix::from_row_slice_generic(rows, cols, &self.data[..]);
+        let scale = Vector3::new(width, height, na::convert::<f64, F>(1.0));
+        HeightField::new(heights, scale)
+    }
+
     // Use naive conversion of heightmap to a `TriMesh`.
     // 
     // This approach does not cull any vertices, so the result may have a
