@@ -62,7 +62,7 @@ impl<F: RealField> Heightmap<F> {
         let rows = Dynamic::new(self.len1());
         let cols = Dynamic::new(self.len0());
         let heights = DMatrix::from_row_slice_generic(rows, cols, &self.data[..]);
-        let scale = Vector3::new(width, height, na::convert::<f64, F>(1.0));
+        let scale = Vector3::new(width, na::convert::<f64, F>(1.0), height);
         HeightField::new(heights, scale)
     }
 

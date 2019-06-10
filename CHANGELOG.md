@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.1.2] - 2019-06-10
+- Fix to_heightfield
+
 ## [0.1.1] - 2019-06-10
 - Add Heightmap::to_heightfield
 
