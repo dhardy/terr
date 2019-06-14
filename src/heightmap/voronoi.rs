@@ -37,11 +37,19 @@ impl<F: RealField> Voronoi<F> {
     /// the index of the closest point (and `i1` of the next closest, etc.),
     /// `d0` is the distance to the closest point (and `d0` the next, etc.).
     ///
+    /// The distances `d0`, `d1`, etc. are calculated via the `dist` function
+    /// with type `FnMut(F,F) -> F`: this is passed offsets in `x` and `y`
+    /// directions, and returns the combined distance. This function may use
+    /// the standard Euclidian metric `|x,y| (x*x + y*y).sqrt()` or may use a
+    /// different metric, and may add perturbations to the distance (noting
+    /// that distances are relative to the size of the map, i.e. `1` is the
+    /// width/length of the map).
+    ///
     /// The length of the weight list `w` does not need to equal the number of
     /// points.
     /// 
     /// TODO: optimise (current alg is naive)
-    pub fn apply_to(&self, m: &mut Heightmap<F>, w: &[F]){
+    pub fn apply_to<D: FnMut(F, F) -> F>(&self, m: &mut Heightmap<F>, w: &[F], mut dist: D){
         let xn = m.len0();
         let yn = m.len1();
         let xf: F = na::one::<F>() / na::convert(xn as f64);
@@ -55,7 +63,7 @@ impl<F: RealField> Voronoi<F> {
                     let p = self.points[i];
                     let dx = p.0 - na::convert::<_, F>(x as f64) * xf;
                     let dy = p.1 - na::convert::<_, F>(y as f64) * yf;
-                    d[i] = (dx*dx + dy*dy).sqrt();
+                    d[i] = dist(dx, dy);
                 }
                 d.sort_by(|a, b| a.partial_cmp(b).unwrap());
                 let mut h = m.get(x, y);
