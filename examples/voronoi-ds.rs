@@ -7,7 +7,7 @@ use rand::prelude::*;
 use rand::distributions::*;
 
 fn main() {
-    let mut window = Window::new("Terr: fractal");
+    let mut window = Window::new("Terr: voronoi-ds");
     window.set_light(Light::StickToCamera);
     
     // Create a height map:

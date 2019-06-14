@@ -5,7 +5,7 @@ use nalgebra::*;
 use kiss3d::{window::Window, light::Light};
 
 fn main() {
-    let mut window = Window::new("Terr: fractal");
+    let mut window = Window::new("Terr: voronoi");
     window.set_light(Light::StickToCamera);
     
     // Create a height map:
