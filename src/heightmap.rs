@@ -14,9 +14,11 @@ use ncollide3d::procedural::{TriMesh, IndexBuffer};
 use ncollide3d::shape::HeightField;
 
 pub use displacement::{midpoint_displacement, diamond_square};
+pub use fault::fault_displacement;
 pub use voronoi::Voronoi;
 
 mod displacement;
+mod fault;
 mod voronoi;
 
 /// Our heightmap representation.
