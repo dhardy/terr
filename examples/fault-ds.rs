@@ -36,7 +36,7 @@ fn main() {
     for _ in 0..n_faults {
         let r = rng.sample(r_dist) as f32;
         println!("Fault width = {}", r);
-        fault_displacement(&mut heightmap, &mut rng, |d| {
+        fault_displacement(&mut heightmap, &mut rng, (0.0, r), |d| {
             if d >= 0.0 && d < r {
                 10.0 * r * (1.0 - (d / r).powi(2)).powi(2)
             } else {

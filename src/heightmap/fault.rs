@@ -13,37 +13,47 @@ use rand::{Rng, distributions::{UnitCircle, uniform::SampleUniform}};
 
 /// Displace terrain via a random fault-line
 /// 
-/// A random fault-line is sampled. For all points, the signed distance `d`
-/// from the fault-line is calculated (negative in one direction), and terrain
-/// height is increased by the result of `displacement(d)`.
+/// Sample a random fault line, then, for all affected points, sample the signed
+/// distance `d` from the fault line (may be negative), and offset the height of
+/// affected points by `displacement(d)`.
+/// 
+/// The parameter `width` specifies the width of the fault; all affected points
+/// should have `d` in the range `width.0 <= d <= width.1`. For values `d_`
+/// outside this range, `displacement(d_)` should evaluate to 0.
+/// 
+/// The fault-line is uniformly sampled such that at least one point on the map
+/// has `d` within the range specified by `width`.
 /// 
 /// It is recommended that `displacement` be a smooth function except at the
 /// discontinuity `d = 0`. A couple of suggestions follow:
 /// 
 /// ```rust
-/// // Params: h>0 is height, r>0 is width
-/// let displacement = |d| {
+/// let h = 1.0;    // height
+/// let r = 1.0;    // width
+/// let displacement = |d: f64| -> f64 {
 ///     if d >= 0.0 && d < r {
 ///         h * (1.0 - (d / r).powi(2)).powi(2)
 ///     } else {
 ///         0.0
 ///     }
-/// }
+/// };
 /// ```
 /// 
 /// ```rust
-/// // Params: h>0 is height, r<0 scales width
-/// let displacement = |d| {
+/// let h = 1.0;    // height
+/// let r = -1.0;    // width scale, <0
+/// let displacement = |d: f64| -> f64 {
 ///     if d >= 0.0 {
 ///         h * (r * d).exp()
 ///     } else {
 ///         0.0
 ///     }
-/// }
+/// };
 /// ```
 /// 
-/// Unlike real faults, the fault plane is always vertical, straight, and has
-/// uniform displacement along its entire length.
+/// Limitations: (1) only straight faults are generated, (2) the fault
+/// displacement is always vertical, (3) fault displacement is uniform along
+/// the entire length.
 /// 
 /// Source: [Gal19], section 3.1.2.
 /// 
@@ -51,19 +61,25 @@ use rand::{Rng, distributions::{UnitCircle, uniform::SampleUniform}};
 pub fn fault_displacement<F, R: Rng, D: Fn(F) -> F>(
         m: &mut Heightmap<F>,
         rng: &mut R,
+        width: (F, F),
         displacement: D)
 where F: RealField + SampleUniform
 {
     let (zero, one): (F, F) = (na::zero(), na::one());
+    let half: F = na::convert(0.5);
+    let sqrt2: F = na::convert(std::f64::consts::SQRT_2);
+    
     let xn = m.len0();
     let yn = m.len1();
-    let xf: F = na::one::<F>() / na::convert(xn as f64);
-    let yf: F = na::one::<F>() / na::convert(yn as f64);
+    let xf: F = one / na::convert(xn as f64);
+    let yf: F = one / na::convert(yn as f64);
     
-    // Sample fault-line via random coordinate and direction vector
-    let p: (F, F) = (rng.gen_range(zero, one), rng.gen_range(zero, one));
+    // Sample fault-line via random direction vector and offset from centre
+
     let v = rng.sample(UnitCircle);
     let v: (F, F) = (na::convert(v[0]), na::convert(v[1]));
+    let offset = rng.gen_range(width.0 - half * sqrt2, width.1 + half * sqrt2);
+    let p = (half + offset * v.0, half + offset * v.1);
     
     for x in 0..xn {
         for y in 0..yn {

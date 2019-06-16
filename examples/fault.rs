@@ -16,10 +16,9 @@ fn main() {
     
     let mut rng = rand::thread_rng();
     let r_dist = LogNormal::new(-2.5, 0.5);
-    for _ in 0..7 {
+    for _ in 0..50 {
         let r = rng.sample(r_dist) as f32;
-        println!("Width of fault: {}", r);
-        fault_displacement(&mut heightmap, &mut rng, |d| {
+        fault_displacement(&mut heightmap, &mut rng, (0.0, r), |d| {
             // Only affect points on one side of fault at distance < r:
             if d >= 0.0 && d < r {
                 // A smooth function with derivative 0 at d=r.
