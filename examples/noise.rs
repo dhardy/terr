@@ -29,10 +29,6 @@ fn main() {
     quad.enable_backface_culling(true);
     quad.set_color(0.75, 0.65, 0.4);
     
-    let mut sphere = window.add_sphere(1.0);
-    sphere.set_local_translation(Translation3::new(0., 1., 0.));
-    sphere.set_color(0.6, 0.2, 0.8);
-    
     let mut camera = kiss3d::camera::ArcBall::new(Point3::new(0., 3., 15.), Point3::new(0., 0., 1.));
     
     while window.render_with_camera(&mut camera) {
