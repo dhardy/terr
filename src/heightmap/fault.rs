@@ -6,8 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use nalgebra as na;
-use na::RealField;
+use nalgebra::{convert, RealField, zero};
 use super::Heightmap;
 use rand::{Rng, distributions::{UnitCircle, uniform::SampleUniform}};
 
@@ -65,32 +64,25 @@ pub fn fault_displacement<F, R: Rng, D: Fn(F) -> F>(
         displacement: D)
 where F: RealField + SampleUniform
 {
-    let (zero, one): (F, F) = (na::zero(), na::one());
-    let half: F = na::convert(0.5);
-    let sqrt2: F = na::convert(std::f64::consts::SQRT_2);
-    
-    let xn = m.len0();
-    let yn = m.len1();
-    let xf: F = one / na::convert(xn as f64);
-    let yf: F = one / na::convert(yn as f64);
+    let half: F = convert(0.5);
+    let cells = m.cells();
     
     // Sample fault-line via random direction vector and offset from centre
-
     let v = rng.sample(UnitCircle);
-    let v: (F, F) = (na::convert(v[0]), na::convert(v[1]));
-    let offset = rng.gen_range(width.0 - half * sqrt2, width.1 + half * sqrt2);
-    let p = (half + offset * v.0, half + offset * v.1);
+    let v: (F, F) = (convert(v[0]), convert(v[1]));
+    let radius = half * (m.size.0.powi(2) + m.size.1.powi(2)).sqrt();  // centre to corner
+    let offset = rng.gen_range(width.0 - radius, width.1 + radius);
+    let p = (offset * v.0, offset * v.1);
     
-    for x in 0..xn {
-        for y in 0..yn {
-            // Take the dot-product of the vector from p to (x, y)
-            let dx = na::convert::<_, F>(x as f64) * xf - p.0;
-            let dy = na::convert::<_, F>(y as f64) * yf - p.1;
-            let d = dx * v.0 + dy * v.1;
+    for iy in 0..cells.1 {
+        for ix in 0..cells.0 {
+            // Take the dot-product of the vector from p to c
+            let c = m.coord_of(ix, iy);
+            let d = (c.0 - p.0) * v.0 + (c.1 - p.1) * v.1;
             let h = displacement(d);
-            if h != zero {
-                let h = m.get(x, y) + h;
-                m.set(x, y, h);
+            if h != zero() {
+                let h = m.get(ix, iy) + h;
+                m.set(ix, iy, h);
             }
         }
     }

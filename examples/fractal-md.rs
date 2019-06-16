@@ -10,17 +10,16 @@ use rand::prelude::*;
 use rand::distributions::*;
 
 fn main() {
-    let mut window = Window::new("Terr: fractal");
+    let mut window = Window::new("Terr: fractal displacement (midpoint)");
     window.set_light(Light::StickToCamera);
     
-    // Create a height map:
-    let size = 128; // must be a power of 2
-    let mut heightmap = Heightmap::new(size + 1, size + 1, 0f32);
+    let cells = 129; // must be 2.powi(n) + 1 for some integer n
+    let mut heightmap = Heightmap::new_flat((cells, cells), (100.0, 100.0));
     
     // Randomise the height of the four corners:
     let distr = LogNormal::new(0.5, 1.5);
     let mut rng = rand::thread_rng();
-    for (x, y) in [(0, 0), (0, size), (size, 0), (size, size)].iter() {
+    for (x, y) in [(0, 0), (0, cells-1), (cells-1, 0), (cells-1, cells-1)].iter() {
         let h = distr.sample(&mut rng) as f32;
         println!("Height[{},{}] = {}", *x, *y, h);
         heightmap.set(*x, *y, h);
@@ -33,7 +32,7 @@ fn main() {
     let distr = Uniform::new(-scale, scale);
     midpoint_displacement(&mut heightmap, 0, &mut rng, distr).unwrap();
     
-    let mut quad = heightmap.to_trimesh(100., 100.);
+    let mut quad = heightmap.to_trimesh();
     for p in &mut quad.coords {
         // Quad is created with z=height, but y is up in kiss3d's camera.
         // We must rotate all three coords to keep the right side up.

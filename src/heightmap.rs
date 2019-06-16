@@ -9,7 +9,7 @@
 //! Functionality based on heightmaps
 
 use nalgebra as na;
-use na::{DMatrix, Dynamic, Vector3, RealField, geometry::{Point2, Point3}};
+use na::{convert, DMatrix, Dynamic, Vector3, RealField, geometry::{Point2, Point3}};
 use ncollide3d::procedural::{TriMesh, IndexBuffer};
 use ncollide3d::shape::HeightField;
 
@@ -21,52 +21,109 @@ mod displacement;
 mod fault;
 mod voronoi;
 
-/// Our heightmap representation.
+/// A heightmap represents a terrian via a grid of height offsets.
+/// 
+/// Each point can be accessed via an index or via a coordinate. Coordinate
+/// representation assumes that the map is centred on the origin and has the
+/// given `size`.
 pub struct Heightmap<F> {
-    stride: usize,
+    cells: (u32, u32),
+    len_frac: (F, F),
+    size: (F, F),
     data: Vec<F>,
 }
 
-impl<F> Heightmap<F> {
-    /// Get length in first dimension.
-    pub fn len0(&self) -> usize { self.stride }
-    /// Get length in second dimension.
-    pub fn len1(&self) -> usize { self.data.len() / self.stride }
+// accessors
+impl<F: RealField> Heightmap<F> {
+    /// Get the number of cells
+    #[inline]
+    pub fn cells(&self) -> (u32, u32) {
+        self.cells
+    }
+    
+    /// Get the size of the height-map (largest coord - smallest coord).
+    #[inline]
+    pub fn size(&self) -> (F, F) {
+        self.size
+    }
+    
+    /// Get the coordinates of the given cell
+    #[inline]
+    pub fn coord_of(&self, cx: u32, cy: u32) -> (F, F) {
+        let half: F = convert(0.5);
+        let x = (convert::<_, F>(cx as f64) * self.len_frac.0 - half) * self.size.0;
+        let y = (convert::<_, F>(cy as f64) * self.len_frac.1 - half) * self.size.1;
+        (x, y)
+    }
+    
+    /// Get value at the given cell.
+    /// 
+    /// Requires `cx < self.cells().0 && cy < self.cells().1`.
+    #[inline]
+    pub fn get(&self, cx: u32, cy: u32) -> F {
+        assert!(cx < self.cells.0);
+        assert!(cy < self.cells.1);
+        self.data[(cx as usize) + (cy as usize) * (self.cells.0 as usize)]
+    }
     
     /// Set value at the given coordinates.
     /// 
-    /// Requires `x < self.len0()` and `y < self.len1()`.
-    pub fn set(&mut self, x: usize, y: usize, val: F) {
-        assert!(x < self.stride);
-        self.data[x + y * self.stride] = val;
+    /// Requires `cx < self.cells().0 && cy < self.cells().1`.
+    #[inline]
+    pub fn set(&mut self, cx: u32, cy: u32, val: F) {
+        assert!(cx < self.cells.0);
+        assert!(cy < self.cells.1);
+        self.data[(cx as usize) + (cy as usize) * (self.cells.0 as usize)] = val;
     }
 }
 
-impl<F: Clone> Heightmap<F> {
-    /// Construct a new Heightmap with size `x×y` and all elements initialised to v.
-    pub fn new(x: usize, y: usize, v: F) -> Self {
+// constructors
+impl<F: RealField> Heightmap<F> {
+    /// Construct a new, flat Heightmap with the given number of `cells` and
+    /// `size`.
+    pub fn new_flat(cells: (u32, u32), size: (F, F)) -> Self {
+        let x_frac: F = convert(1.0 / (cells.0 - 1) as f64);
+        let y_frac: F = convert(1.0 / (cells.1 - 1) as f64);
         Heightmap {
-            stride: x,
-            data: vec![v; x * y],
+            cells,
+            len_frac: (x_frac, y_frac),
+            size,
+            data: vec![na::zero(); cells.0 as usize * cells.1 as usize],
         }
     }
     
-    /// Get value at the given coordinates.
-    /// 
-    /// Requires `x < self.len0()` and `y < self.len1()`.
-    pub fn get(&self, x: usize, y: usize) -> F {
-        assert!(x < self.stride);
-        self.data[x + y * self.stride].clone()
+    /// Construct a new Heightmap using the given evaluation function and with
+    /// the given number of `cells` and `size`.
+    pub fn new_func<Func: Fn(F, F) -> F>(cells: (u32, u32), size: (F, F), func: Func) -> Self {
+        let half: F = convert(0.5);
+        let x_frac: F = convert(1.0 / (cells.0 - 1) as f64);
+        let y_frac: F = convert(1.0 / (cells.1 - 1) as f64);
+        let mut data = Vec::with_capacity(cells.0 as usize * cells.1 as usize);
+        for iy in 0..cells.1 {
+            for ix in 0..cells.0 {
+                let x = (convert::<_, F>(ix as f64) * x_frac - half) * size.0;
+                let y = (convert::<_, F>(iy as f64) * y_frac - half) * size.1;
+                data.push(func(x, y));
+            }
+        }
+        
+        Heightmap {
+            cells,
+            len_frac: (x_frac, y_frac),
+            size,
+            data,
+        }
     }
 }
 
+// conversions
 impl<F: RealField> Heightmap<F> {
     // Convert to a HeightField
-    pub fn to_heightfield(&self, width: F, height: F) -> HeightField<F> {
-        let rows = Dynamic::new(self.len1());
-        let cols = Dynamic::new(self.len0());
+    pub fn to_heightfield(&self) -> HeightField<F> {
+        let rows = Dynamic::new(self.cells.1 as usize);
+        let cols = Dynamic::new(self.cells.0 as usize);
         let heights = DMatrix::from_row_slice_generic(rows, cols, &self.data[..]);
-        let scale = Vector3::new(width, na::convert::<f64, F>(1.0), height);
+        let scale = Vector3::new(self.size.0, convert::<f64, F>(1.0), self.size.1);
         HeightField::new(heights, scale)
     }
 
@@ -74,52 +131,54 @@ impl<F: RealField> Heightmap<F> {
     // 
     // This approach does not cull any vertices, so the result may have a
     // very high triangle count.
-    pub fn to_trimesh(&self, width: F, height: F) -> TriMesh<F> {
-        let usubdivs = self.stride - 1;
-        let vsubdivs = self.data.len() / self.stride - 1;
+    pub fn to_trimesh(&self) -> TriMesh<F> {
+        let one: F = na::one();
+        let half: F = convert(0.5);
+        let (x_divs, y_divs) = (self.cells.0 - 1, self.cells.1 - 1);
         
         // code adapted from ncollide::procedural::unit_quad:
-        let twstep = na::one::<F>() / na::convert(usubdivs as f64);
-        let thstep = na::one::<F>() / na::convert(vsubdivs as f64);
-        let wstep = twstep * width;
-        let hstep = thstep * height;
-        let cw = na::convert::<f64, F>(0.5) * width;
-        let ch = na::convert::<f64, F>(0.5) * height;
+        let tx_step = one / convert(x_divs as f64);
+        let ty_step = one / convert(y_divs as f64);
+        let x_step = tx_step * self.size.0;
+        let y_step = ty_step * self.size.1;
+        let cw = half * self.size.0;
+        let ch = half * self.size.1;
 
         let mut vertices = Vec::new();
         let mut triangles = Vec::new();
         let mut tex_coords = Vec::new();
 
         // create the vertices
-        for i in 0usize..vsubdivs + 1 {
-            for j in 0usize..usubdivs + 1 {
-                let ni: F = na::convert(i as f64);
-                let nj: F = na::convert(j as f64);
+        for iy in 0..self.cells.1 {
+            for ix in 0..self.cells.0 {
+                let fy: F = convert(iy as f64);
+                let fx: F = convert(ix as f64);
 
                 let v = Point3::new(
-                        nj * wstep - cw,
-                        ni * hstep - ch,
-                        self.get(i, j));
+                        fx * x_step - cw,
+                        fy * y_step - ch,
+                        self.get(iy, ix));
                 vertices.push(v);
-                let _1 = na::one::<F>();
-                tex_coords.push(Point2::new(_1 - nj * twstep, _1 - ni * thstep))
+                tex_coords.push(Point2::new(one - fx * tx_step, one - fy * ty_step))
             }
         }
 
         // create triangles
-        fn dl_triangle(i: u32, j: u32, ws: u32) -> Point3<u32> {
-            Point3::new((i + 1) * ws + j, i * ws + j, (i + 1) * ws + j + 1)
-        }
+        let ws = self.cells.0;
+        
+        let dl_triangle = |iy: u32, ix: u32| -> Point3<u32> {
+            Point3::new((iy + 1) * ws + ix, iy * ws + ix, (iy + 1) * ws + ix + 1)
+        };
 
-        fn ur_triangle(i: u32, j: u32, ws: u32) -> Point3<u32> {
-            Point3::new(i * ws + j, i * ws + (j + 1), (i + 1) * ws + j + 1)
-        }
+        let ur_triangle = |iy: u32, ix: u32| -> Point3<u32> {
+            Point3::new(iy * ws + ix, iy * ws + (ix + 1), (iy + 1) * ws + ix + 1)
+        };
 
-        for i in 0usize..vsubdivs {
-            for j in 0usize..usubdivs {
+        for iy in 0..y_divs {
+            for ix in 0..x_divs {
                 // build two triangles...
-                triangles.push(dl_triangle(i as u32, j as u32, (usubdivs + 1) as u32));
-                triangles.push(ur_triangle(i as u32, j as u32, (usubdivs + 1) as u32));
+                triangles.push(dl_triangle(iy, ix));
+                triangles.push(ur_triangle(iy, ix));
             }
         }
 

@@ -7,17 +7,16 @@ use rand::prelude::*;
 use rand::distributions::*;
 
 fn main() {
-    let mut window = Window::new("Terr: voronoi-ds");
+    let mut window = Window::new("Terr: voronoi + fractal displacement");
     window.set_light(Light::StickToCamera);
     
-    // Create a height map:
-    let size = 128; // must be a power of 2
-    let mut heightmap = Heightmap::new(size + 1, size + 1, 0f32);
+    let cells = 129; // must be 2.powi(n) + 1 for some integer n
+    let mut heightmap = Heightmap::new_flat((cells, cells), (100.0, 100.0));
     
     // Randomise the height of the four corners:
     let distr = LogNormal::new(0.5, 1.0);
     let mut rng = rand::thread_rng();
-    for (x, y) in [(0, 0), (0, size), (size, 0), (size, size)].iter() {
+    for (x, y) in [(0, 0), (0, cells-1), (cells-1, 0), (cells-1, cells-1)].iter() {
         let h = distr.sample(&mut rng) as f32;
         heightmap.set(*x, *y, h);
     }
@@ -27,11 +26,11 @@ fn main() {
     let distr = Uniform::new(-scale, scale);
     diamond_square(&mut heightmap, 0, &mut rng, distr).unwrap();
     
-    let w = [-80.0, 20.0, 50.0];
-    let voronoi = Voronoi::random(24, &mut rand::thread_rng());
-    voronoi.apply_to(&mut heightmap, &w, |x,y| (x*x + y*y));
+    let w = [-1.0, 0.5, 1.0];
+    let voronoi = Voronoi::random(&heightmap, 24, &mut rand::thread_rng());
+    voronoi.apply_to(&mut heightmap, &w, |x,y| 0.01 * (x*x + y*y));
     
-    let mut quad = heightmap.to_trimesh(100., 100.);
+    let mut quad = heightmap.to_trimesh();
     for p in &mut quad.coords {
         // Quad is created with z=height, but y is up in kiss3d's camera.
         // We must rotate all three coords to keep the right side up.

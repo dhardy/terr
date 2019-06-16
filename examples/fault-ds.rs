@@ -7,24 +7,23 @@ use rand::prelude::*;
 use rand::distributions::*;
 
 fn main() {
-    let mut window = Window::new("Terr: voronoi");
+    let mut window = Window::new("Terr: fault + fractal displacement");
     window.set_light(Light::StickToCamera);
     
-    // Create a height map:
-    let size = 128; // must be a power of 2
-    let mut heightmap = Heightmap::new(size + 1, size + 1, 0f32);
+    let cells = 129; // must be 2.powi(n) + 1 for some integer n
+    let mut heightmap = Heightmap::new_flat((cells, cells), (100.0, 100.0));
     
     // Randomise the height of the four corners:
-    let distr = LogNormal::new(0.5, 1.5);
+    let distr = LogNormal::new(0.5, 1.0);
     let mut rng = rand::thread_rng();
-    for (x, y) in [(0, 0), (0, size), (size, 0), (size, size)].iter() {
+    for (x, y) in [(0, 0), (0, cells-1), (cells-1, 0), (cells-1, cells-1)].iter() {
         let h = distr.sample(&mut rng) as f32;
         println!("Height[{},{}] = {}", *x, *y, h);
         heightmap.set(*x, *y, h);
     }
     
     // Perform random midpoint displacement with randomised scale.
-    let scale = LogNormal::new(-2.0, 0.5).sample(&mut rng) as f32;
+    let scale = LogNormal::new(-2.5, 0.5).sample(&mut rng) as f32;
     println!("Scale = {}", scale);
     // Note: Normal(0, scale) is possibly better, but not yet available for f32.
     let distr = Uniform::new(-scale, scale);
@@ -32,20 +31,21 @@ fn main() {
     
     let n_faults = rng.sample(LogNormal::new(1.5, 0.5)) as usize;
     println!("Num faults = {}", n_faults);
-    let r_dist = LogNormal::new(-2.5, 0.5);
+    let r_dist = LogNormal::new(2.0, 1.0);
     for _ in 0..n_faults {
         let r = rng.sample(r_dist) as f32;
-        println!("Fault width = {}", r);
+        let h = 0.1 * r;
+        println!("Fault width = {}, height = {}", r, h);
         fault_displacement(&mut heightmap, &mut rng, (0.0, r), |d| {
             if d >= 0.0 && d < r {
-                10.0 * r * (1.0 - (d / r).powi(2)).powi(2)
+                h * (1.0 - (d / r).powi(2)).powi(2)
             } else {
                 0.0
             }
         });
     }
     
-    let mut quad = heightmap.to_trimesh(100., 100.);
+    let mut quad = heightmap.to_trimesh();
     for p in &mut quad.coords {
         // Quad is created with z=height, but y is up in kiss3d's camera.
         // We must rotate all three coords to keep the right side up.

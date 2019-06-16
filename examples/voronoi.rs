@@ -8,18 +8,17 @@ fn main() {
     let mut window = Window::new("Terr: voronoi");
     window.set_light(Light::StickToCamera);
     
-    // Create a height map:
-    let size = 128; // must be a power of 2
-    let mut heightmap = Heightmap::new(size + 1, size + 1, 0f32);
+    let cells = 129; // must be 2.powi(n) + 1 for some integer n
+    let mut heightmap = Heightmap::new_flat((cells, cells), (100.0, 100.0));
     
     // Try different weights and numbers of points!
-    let w = [-80.0, 20.0, 50.0];
-    // let w = [-90.0, 120.0];
-    // let w = [70.0, -120.0];
-    let voronoi = Voronoi::random(24, &mut rand::thread_rng());
+    let w = [-0.8, 0.2, 0.4];
+    // let w = [-0.9, 1.2];
+    // let w = [0.7, -1.2];
+    let voronoi = Voronoi::random(&heightmap, 24, &mut rand::thread_rng());
     voronoi.apply_to(&mut heightmap, &w, |x,y| (x*x + y*y).sqrt());
     
-    let mut quad = heightmap.to_trimesh(100., 100.);
+    let mut quad = heightmap.to_trimesh();
     for p in &mut quad.coords {
         // Quad is created with z=height, but y is up in kiss3d's camera.
         // We must rotate all three coords to keep the right side up.

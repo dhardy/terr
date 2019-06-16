@@ -9,7 +9,7 @@
 use super::Heightmap;
 use nalgebra as na;
 use na::RealField;
-use rand::{Rng, distributions::{Distribution, Standard}};
+use rand::{Rng, distributions::{Distribution, Standard, Uniform, uniform::SampleUniform}};
 
 /// A generalised Voronoi diagram generator
 pub struct Voronoi<F> {
@@ -41,46 +41,49 @@ impl<F: RealField> Voronoi<F> {
     /// with type `FnMut(F,F) -> F`: this is passed offsets in `x` and `y`
     /// directions, and returns the combined distance. This function may use
     /// the standard Euclidian metric `|x,y| (x*x + y*y).sqrt()` or may use a
-    /// different metric, and may add perturbations to the distance (noting
-    /// that distances are relative to the size of the map, i.e. `1` is the
-    /// width/length of the map).
+    /// different metric, and may add perturbations to the distance.
     ///
     /// The length of the weight list `w` does not need to equal the number of
     /// points.
     /// 
     /// TODO: optimise (current alg is naive)
     pub fn apply_to<D: FnMut(F, F) -> F>(&self, m: &mut Heightmap<F>, w: &[F], mut dist: D){
-        let xn = m.len0();
-        let yn = m.len1();
-        let xf: F = na::one::<F>() / na::convert(xn as f64);
-        let yf: F = na::one::<F>() / na::convert(yn as f64);
+        let cells = m.cells();
         let np = self.points.len();
         let nw = w.len().min(np);
         let mut d = vec![F::zero(); self.points.len()];
-        for x in 0..xn {
-            for y in 0..yn {
+        
+        for iy in 0..cells.1 {
+            for ix in 0..cells.0 {
                 for i in 0..np {
                     let p = self.points[i];
-                    let dx = p.0 - na::convert::<_, F>(x as f64) * xf;
-                    let dy = p.1 - na::convert::<_, F>(y as f64) * yf;
-                    d[i] = dist(dx, dy);
+                    let c = m.coord_of(ix, iy);
+                    d[i] = dist(p.0 - c.0, p.1 - c.1);
                 }
                 d.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                let mut h = m.get(x, y);
+                let mut h = m.get(ix, iy);
                 for i in 0..nw {
                     h += w[i] * d[i];
                 }
-                m.set(x, y, h);
+                m.set(ix, iy, h);
             }
         }
     }
 }
 
-impl<F: RealField> Voronoi<F> where Standard: Distribution<F> {
+impl<F: RealField + SampleUniform> Voronoi<F> where Standard: Distribution<F> {
     /// Construct a new diagram, generating `num` random points.
-    pub fn random<R: Rng + ?Sized>(num: usize, rng: &mut R) -> Self {
+    /// 
+    /// Coordinates are sampled from the range available on the heightmap.
+    pub fn random<R: Rng + ?Sized>(m: &Heightmap<F>,
+            num: usize, rng: &mut R) -> Self
+    {
+        let size = m.size();
+        let half: F = na::convert(0.5);
+        let x_range = Uniform::new(-half * size.0, half * size.0);
+        let y_range = Uniform::new(-half * size.1, half * size.1);
         Voronoi {
-            points: (0..num).map(|_| (rng.gen(), rng.gen())).collect(),
+            points: (0..num).map(|_| (rng.sample(&x_range), rng.sample(&y_range))).collect(),
         }
     }
 }

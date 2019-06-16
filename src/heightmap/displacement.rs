@@ -43,12 +43,13 @@ pub fn midpoint_displacement<F, R: Rng, D: Distribution<F>>(
         distr: D) -> Result<(), Error>
 where F: RealField + Copy
 {
-    if m.len0() != m.len1() {
+    let cells = m.cells();
+    if cells.0 != cells.1 {
         return Err(Error::NotSquare);
     }
-    let size_1 = m.len0() - 1;
-    let n = size_1.trailing_zeros();
-    if m.len0() != 2usize.pow(n) + 1 {
+    let len_m1 = cells.0 - 1;
+    let n = len_m1.trailing_zeros();
+    if cells.0 != 2u32.pow(n) + 1 {
         return Err(Error::NotPowerOf2Plus1);
     }
     
@@ -56,16 +57,16 @@ where F: RealField + Copy
     let mid4 = |a, b, c, d| { (a + b + c + d) * na::convert(0.25) };
     
     for i in n0..n {
-        let quad_len = 2usize.pow(n - i);
+        let quad_len = 2u32.pow(n - i);
         let mid_len = quad_len / 2;
         let scale: F = na::convert(mid_len as f64);
         
         let mut x = (0, quad_len);
         let mut y = (0, quad_len);
-        let adv = |x: &mut (usize, usize)| {
+        let adv = |x: &mut (u32, u32)| {
             x.0 = x.1;
             x.1 += quad_len;
-            x.1 > size_1
+            x.1 > len_m1
         };
         loop {
             let h00 = m.get(x.0, y.0);
@@ -124,12 +125,13 @@ where F: RealField + Copy
 {
     #![allow(non_snake_case)]
     
-    if m.len0() != m.len1() {
+    let cells = m.cells();
+    if cells.0 != cells.1 {
         return Err(Error::NotSquare);
     }
-    let size_1 = m.len0() - 1;
-    let n = size_1.trailing_zeros();
-    if m.len0() != 2usize.pow(n) + 1 {
+    let len_m1 = cells.0 - 1;
+    let n = len_m1.trailing_zeros();
+    if cells.0 != 2u32.pow(n) + 1 {
         return Err(Error::NotPowerOf2Plus1);
     }
     
@@ -137,17 +139,17 @@ where F: RealField + Copy
     let mid4 = |a, b, c, d| { (a + b + c + d) * na::convert(0.25) };
     
     for i in n0..n {
-        let quad_len = 2usize.pow(n - i);
+        let quad_len = 2u32.pow(n - i);
         let mid_len = quad_len / 2;
         let scale: F = na::convert(mid_len as f64);
         let scale2: F = scale * na::convert(std::f64::consts::SQRT_2);
         
         let mut x = (0, quad_len);
         let mut y = (0, quad_len);
-        let adv = |x: &mut (usize, usize)| {
+        let adv = |x: &mut (u32, u32)| {
             x.0 = x.1;
             x.1 += quad_len;
-            x.1 > size_1
+            x.1 > len_m1
         };
         loop {
             // Displace mid of diamond, and two square points which do not
