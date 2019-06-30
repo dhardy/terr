@@ -22,4 +22,11 @@
 //! 
 //! Currently this library is limited to single-layer heightfields.
 
+/// Types usable as an approximation of the real numbers, ℝ.
+/// 
+/// Currently this is fixed as `nalgebra::RealField`.
+pub use nalgebra::RealField;
+
+pub mod unbounded;
 pub mod heightmap;
+pub mod mesh;
