@@ -7,32 +7,19 @@
 // except according to those terms.
 
 //! Terrain tools
-
-/*
-For now, we will focus only on simple height-maps.
-
-Input source:
--   load from image data
-
-Procedural sources:
--   flat
--   noise
--   fractal algorithms
-
-Optimisation:
--   cull unnecessary triangles: http://www.shamusyoung.com/twentysidedtale/?p=142
-    Peter Lindstrom's paper: Terrain Simplification Simplified, May 2002
-
-References:
--   https://14mul8.wordpress.com/2018/10/13/procedural-terrain-generation-part-2-midpoint-displacement-algorithm/
-
-    Covers fractal generation via the mid-point displacement algorithm.
-
--   http://www.shamusyoung.com/twentysidedtale/?p=143
-    
-    -   optimisation pp 2, 4-5
-    -   textures pp 3, 7-9
-    -   source: Terrain
-*/
+//! 
+//! ## Representation of terrains
+//!
+//! Many digital models of terrains have been proposed in the literature:
+//! pure functional representation (`h: ℝ² → ℝ`),
+//! discrete heightfields aka Digital Elevation Models (potentially with
+//! non-linear interpolation) for `O(n²)` memory usage,
+//! layered representations of functions or heightfields representing heights
+//! of multiple materials in a fixed sequence,
+//! functional volumetric representation (`μ: ℝ³ → M` for material `M`),
+//! voxels for `O(n³)` memory usage, and hybrid representations (e.g. a multi-
+//! layered heightfield with local exceptions).
+//! 
+//! Currently this library is limited to single-layer heightfields.
 
 pub mod heightmap;
