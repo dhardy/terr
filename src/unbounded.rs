@@ -8,6 +8,10 @@
 
 //! This module concerns surfaces represented by a function `h: ℝ² → ℝ`.
 
+mod perlin;
+
+pub use perlin::{Perlin, PerlinError};
+
 use crate::RealField;
 
 /// A map of 2D coordinate to height
