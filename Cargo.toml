@@ -17,7 +17,8 @@ travis-ci = { repository = "dhardy/terr" }
 [dependencies]
 nalgebra = "0.18"
 ncollide3d = "0.19"
-rand = "0.6"
+rand = "0.7"
+rand_distr = "0.2.1"
 
 [dev-dependencies]
 kiss3d = "0.19"

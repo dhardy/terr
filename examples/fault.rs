@@ -4,7 +4,7 @@ use terr::heightmap::{Heightmap, fault_displacement};
 use nalgebra::*;
 use kiss3d::{window::Window, light::Light};
 use rand::prelude::*;
-use rand::distributions::*;
+use rand_distr::*;
 
 fn main() {
     let mut window = Window::new("Terr: fault");
@@ -14,7 +14,7 @@ fn main() {
     let mut heightmap = Heightmap::new_flat((cells, cells), (100.0, 100.0));
     
     let mut rng = rand::thread_rng();
-    let r_dist = LogNormal::new(2.0, 1.0);
+    let r_dist = LogNormal::new(2.0, 1.0).unwrap();
     for _ in 0..50 {
         let r = rng.sample(r_dist) as f32;
         fault_displacement(&mut heightmap, &mut rng, (0.0, r), |d| {

@@ -4,7 +4,7 @@ use terr::heightmap::{Heightmap, Voronoi, diamond_square};
 use nalgebra::*;
 use kiss3d::{window::Window, light::Light};
 use rand::prelude::*;
-use rand::distributions::*;
+use rand_distr::*;
 
 fn main() {
     let mut window = Window::new("Terr: voronoi + fractal displacement");
@@ -14,7 +14,7 @@ fn main() {
     let mut heightmap = Heightmap::new_flat((cells, cells), (100.0, 100.0));
     
     // Randomise the height of the four corners:
-    let distr = LogNormal::new(0.5, 1.0);
+    let distr = LogNormal::new(0.5, 1.0).unwrap();
     let mut rng = rand::thread_rng();
     for (x, y) in [(0, 0), (0, cells-1), (cells-1, 0), (cells-1, cells-1)].iter() {
         let h = distr.sample(&mut rng) as f32;

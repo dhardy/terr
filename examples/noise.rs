@@ -2,17 +2,17 @@
 //! This cannot generate any features but may be useful to add a little
 //! variation on top of other data.
 
-use nalgebra::{Point3, Vector3, Translation3};
+use nalgebra::{Point3, Vector3};
 use ncollide3d::procedural;
 use kiss3d::{window::Window, light::Light};
 use rand::prelude::*;
-use rand::distributions::Normal;
+use rand_distr::*;
 
 fn main() {
     let mut window = Window::new("Terr: noise");
     window.set_light(Light::StickToCamera);
     
-    let distr = Normal::new(0., 0.2);
+    let distr = Normal::new(0., 0.2).unwrap();
     let mut rng = rand::thread_rng();
     
     let mut quad = procedural::quad::<f32>(100., 100., 100, 100);

@@ -8,7 +8,8 @@
 
 use nalgebra::{convert, RealField, zero};
 use super::Heightmap;
-use rand::{Rng, distributions::{UnitCircle, uniform::SampleUniform}};
+use rand::Rng;
+use rand_distr::{UnitCircle, uniform::SampleUniform};
 
 /// Displace terrain via a random fault-line
 /// 

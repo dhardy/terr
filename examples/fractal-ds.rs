@@ -7,7 +7,7 @@ use terr::heightmap::{Heightmap, diamond_square};
 use nalgebra::*;
 use kiss3d::{window::Window, light::Light};
 use rand::prelude::*;
-use rand::distributions::*;
+use rand_distr::*;
 
 fn main() {
     let mut window = Window::new("Terr: fractal displacement (diamond-square)");
@@ -17,7 +17,7 @@ fn main() {
     let mut heightmap = Heightmap::new_flat((cells, cells), (100.0, 100.0));
     
     // Randomise the height of the four corners:
-    let distr = LogNormal::new(0.5, 1.5);
+    let distr = LogNormal::new(0.5, 1.5).unwrap();
     let mut rng = rand::thread_rng();
     for (x, y) in [(0, 0), (0, cells-1), (cells-1, 0), (cells-1, cells-1)].iter() {
         let h = distr.sample(&mut rng) as f32;
@@ -26,10 +26,10 @@ fn main() {
     }
     
     // Perform random midpoint displacement with randomised scale.
-    let scale = LogNormal::new(-2.0, 1.0).sample(&mut rng) as f32;
+    let scale = LogNormal::new(-2.0, 1.0).unwrap().sample(&mut rng) as f32;
     println!("Scale = {}", scale);
-    // Note: Normal(0, scale) is possibly better, but not yet available for f32.
-    let distr = Uniform::new(-scale, scale);
+    // Note: can use Uniform::new(-scale, scale) instead for speed
+    let distr = Normal::new(0.0, scale).unwrap();
     diamond_square(&mut heightmap, 0, &mut rng, distr).unwrap();
     
     let mut quad = heightmap.to_trimesh();
