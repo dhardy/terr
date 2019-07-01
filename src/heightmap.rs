@@ -13,6 +13,8 @@ use na::{convert, DMatrix, Dynamic, Vector3, RealField, geometry::{Point2, Point
 use ncollide3d::procedural::{TriMesh, IndexBuffer};
 use ncollide3d::shape::HeightField;
 
+use crate::unbounded::UnboundedSurface;
+
 pub use displacement::{midpoint_displacement, diamond_square};
 pub use fault::fault_displacement;
 pub use voronoi::Voronoi;
@@ -100,9 +102,9 @@ impl<F: RealField> Heightmap<F> {
         let y_frac: F = convert(1.0 / (cells.1 - 1) as f64);
         let mut data = Vec::with_capacity(cells.0 as usize * cells.1 as usize);
         for iy in 0..cells.1 {
+            let y = (convert::<_, F>(iy as f64) * y_frac - half) * size.1;
             for ix in 0..cells.0 {
                 let x = (convert::<_, F>(ix as f64) * x_frac - half) * size.0;
-                let y = (convert::<_, F>(iy as f64) * y_frac - half) * size.1;
                 data.push(func(x, y));
             }
         }
@@ -112,6 +114,17 @@ impl<F: RealField> Heightmap<F> {
             len_frac: (x_frac, y_frac),
             size,
             data,
+        }
+    }
+    
+    pub fn add(&mut self, surface: &dyn UnboundedSurface<F>, mult: F) {
+        // TODO: fix coordinate offset
+        for iy in 0..self.cells.1 {
+            for ix in 0..self.cells.0 {
+                let (x, y) = self.coord_of(ix, iy);
+                let h = self.get(ix, iy);
+                self.set(ix, iy, h + mult * surface.get(x, y));
+            }
         }
     }
 }
