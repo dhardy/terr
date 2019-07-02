@@ -4,12 +4,17 @@ use terr::{mesh::SampleMesh, unbounded::Perlin};
 use std::f32::consts;
 use nalgebra::{Point3, UnitQuaternion, Vector3};
 use kiss3d::{window::Window, light::Light};
+use rand::thread_rng;
+use rand_distr::{Distribution, UnitCircle};
 
 fn main() {
     let mut window = Window::new("Terr: perlin");
     window.set_light(Light::StickToCamera);
     
-    let surface = Perlin::new(0.08615, 256, &mut rand::thread_rng()).unwrap();
+    let mut rng = thread_rng();
+    let sampler = || UnitCircle.sample(&mut rng);
+    
+    let surface = Perlin::new(0.08615, 256, sampler).unwrap();
     let mesh = surface.sample_mesh((-50., -50.), (100., 100.), (128, 128));
     
     let mut quad = window.add_trimesh(mesh, Vector3::from_element(1.0));

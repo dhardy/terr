@@ -4,17 +4,26 @@ use terr::{heightmap::Heightmap, unbounded::Perlin};
 use std::f32::consts;
 use nalgebra::{Point3, UnitQuaternion, Vector3};
 use kiss3d::{window::Window, light::Light};
+use rand::thread_rng;
+use rand_distr::{Distribution, UnitCircle, Exp1};
 
 fn main() {
-    let mut window = Window::new("Terr: perlin");
+    let mut window = Window::new("Terr: perlin octaves");
     window.set_light(Light::StickToCamera);
     
-    let cells = 200;
+    let mut rng = thread_rng();
+    
+    let cells = 256;
     let mut heightmap = Heightmap::new_flat((cells, cells), (100.0, 100.0));
-    let mut ampl = 50.0;
+    let mut ampl = 20.0;
     let mut larc = 1.0 / (cells as f32);
     for _ in 0..7 {
-        let surface = Perlin::new(larc, 256, &mut rand::thread_rng()).unwrap();
+        let sampler = || {
+            let g: [f32; 2] = UnitCircle.sample(&mut rng);
+            let s: f32 = Exp1.sample(&mut rng);
+            [g[0] * s, g[1] * s]
+        };
+        let surface = Perlin::new(larc, 1024, sampler).unwrap();
         heightmap.add(&surface, ampl);
         ampl *= 0.5;
         larc *= 2.0;

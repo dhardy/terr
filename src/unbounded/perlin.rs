@@ -9,8 +9,6 @@
 use crate::RealField;
 use crate::unbounded::UnboundedSurface;
 use nalgebra::try_convert;
-use rand::Rng;
-use rand_distr::{Distribution, UnitCircle};
 
 
 /// A Perlin noise generator
@@ -26,16 +24,29 @@ pub enum PerlinError {
     NotPowerOf2,
 }
 
-impl<F: RealField> Perlin<F>
-where UnitCircle: Distribution<[F; 2]>
-{
-    pub fn new<R: Rng + ?Sized>(scale: F, n: usize, rng: &mut R) -> Result<Self, PerlinError> {
+impl<F: RealField> Perlin<F> {
+    /// Construct a Perlin noise generator
+    /// 
+    /// The spatial scale (lacunarity) can be adjusted via the `scale`
+    /// parameter. Each coordinate is first multiplied by `scale` when sampling.
+    /// 
+    /// A fixed number of gradients, `n`, is sampled immediately. These are
+    /// sampled via the `sampler` function. Examples: `UnitCircle.sample(rng)`
+    /// produces classic Perlin noise. Exponentially distributed slopes can lead
+    /// to more interesting terrain:
+    /// 
+    /// ```rust
+    /// let mut g = UnitCircle.sample(rng);
+    /// let mut s = Exp1.sample(rng);
+    /// [g[0] * s, g[1] * s]
+    /// ```
+    pub fn new<S: FnMut() -> [F; 2]>(scale: F, n: usize, mut sampler: S) -> Result<Self, PerlinError> {
         if n != 2usize.pow(n.trailing_zeros()) {
             return Err(PerlinError::NotPowerOf2);
         }
         
         let gradient = (0..n).into_iter()
-            .map(|_| UnitCircle.sample(rng))
+            .map(|_| sampler())
             .collect::<Vec<[F; 2]>>();
         
         Ok(Perlin { scale, mask: (n - 1) as u32, gradient })
