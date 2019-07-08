@@ -1,6 +1,6 @@
 [package]
 name = "terr"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2018"
 authors = ["Diggory Hardy <git@dhardy.name>"]
 license = "MIT/Apache-2.0"

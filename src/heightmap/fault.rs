@@ -67,13 +67,14 @@ where F: RealField + SampleUniform
 {
     let half: F = convert(0.5);
     let cells = m.cells();
+    let size = m.size();
     
     // Sample fault-line via random direction vector and offset from centre
     let v = rng.sample(UnitCircle);
     let v: (F, F) = (convert(v[0]), convert(v[1]));
-    let radius = half * (m.size.0.powi(2) + m.size.1.powi(2)).sqrt();  // centre to corner
+    let radius = half * (size.0.powi(2) + size.1.powi(2)).sqrt();  // centre to corner
     let offset = rng.gen_range(width.0 - radius, width.1 + radius);
-    let p = (offset * v.0, offset * v.1);
+    let p = (half * size.0 + offset * v.0, half * size.1 + offset * v.1);
     
     for iy in 0..cells.1 {
         for ix in 0..cells.0 {

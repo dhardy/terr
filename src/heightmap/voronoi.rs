@@ -78,10 +78,8 @@ impl<F: RealField + SampleUniform> Voronoi<F> where Standard: Distribution<F> {
     pub fn random<R: Rng + ?Sized>(m: &Heightmap<F>,
             num: usize, rng: &mut R) -> Self
     {
-        let size = m.size();
-        let half: F = na::convert(0.5);
-        let x_range = Uniform::new(-half * size.0, half * size.0);
-        let y_range = Uniform::new(-half * size.1, half * size.1);
+        let x_range = Uniform::new(F::zero(), m.size().0);
+        let y_range = Uniform::new(F::zero(), m.size().1);
         Voronoi {
             points: (0..num).map(|_| (rng.sample(&x_range), rng.sample(&y_range))).collect(),
         }

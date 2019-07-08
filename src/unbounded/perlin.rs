@@ -36,9 +36,13 @@ impl<F: RealField> Perlin<F> {
     /// to more interesting terrain:
     /// 
     /// ```rust
-    /// let mut g = UnitCircle.sample(rng);
-    /// let mut s = Exp1.sample(rng);
-    /// [g[0] * s, g[1] * s]
+    /// # use rand::prelude::*;
+    /// # use rand_distr::*;
+    /// let mut rng = rand::thread_rng();
+    /// 
+    /// let g: [f32; 2] = UnitCircle.sample(&mut rng);
+    /// let s: f32 = Exp1.sample(&mut rng);
+    /// let scale = [g[0] * s, g[1] * s];
     /// ```
     pub fn new<S: FnMut() -> [F; 2]>(scale: F, n: usize, mut sampler: S) -> Result<Self, PerlinError> {
         if n != 2usize.pow(n.trailing_zeros()) {

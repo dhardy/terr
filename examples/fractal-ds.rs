@@ -47,7 +47,7 @@ fn main() {
     quad.enable_backface_culling(false);
     quad.set_color(0.75, 0.65, 0.4);
     
-    let mut camera = kiss3d::camera::ArcBall::new(Point3::new(0., 50., 50.), Point3::new(0., 0., 0.));
+    let mut camera = kiss3d::camera::ArcBall::new(Point3::new(50., 50., 0.), Point3::new(50., 0., 50.));
     
     while window.render_with_camera(&mut camera) {
     }

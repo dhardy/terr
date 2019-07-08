@@ -25,12 +25,13 @@ mod voronoi;
 
 /// A heightmap represents a terrian via a grid of height offsets.
 /// 
-/// Each point can be accessed via an index or via a coordinate. Coordinate
-/// representation assumes that the map is centred on the origin and has the
-/// given `size`.
+/// Each point can be accessed via an index or via a coordinate. Coordinates
+/// are of the form `(x, y)` within the square from `(0, 0)` to `size` (a tuple
+/// specified during construction).
+#[derive(Debug, Clone)]
 pub struct Heightmap<F> {
     cells: (u32, u32),
-    len_frac: (F, F),
+    len_frac: (F, F),   // size / (cells - (1,1))
     size: (F, F),
     data: Vec<F>,
 }
@@ -43,7 +44,7 @@ impl<F: RealField> Heightmap<F> {
         self.cells
     }
     
-    /// Get the size of the height-map (largest coord - smallest coord).
+    /// Get the size of the height-map
     #[inline]
     pub fn size(&self) -> (F, F) {
         self.size
@@ -52,9 +53,8 @@ impl<F: RealField> Heightmap<F> {
     /// Get the coordinates of the given cell
     #[inline]
     pub fn coord_of(&self, cx: u32, cy: u32) -> (F, F) {
-        let half: F = convert(0.5);
-        let x = (convert::<_, F>(cx as f64) * self.len_frac.0 - half) * self.size.0;
-        let y = (convert::<_, F>(cy as f64) * self.len_frac.1 - half) * self.size.1;
+        let x = convert::<_, F>(cx as f64) * self.len_frac.0;
+        let y = convert::<_, F>(cy as f64) * self.len_frac.1;
         (x, y)
     }
     
@@ -84,8 +84,8 @@ impl<F: RealField> Heightmap<F> {
     /// Construct a new, flat Heightmap with the given number of `cells` and
     /// `size`.
     pub fn new_flat(cells: (u32, u32), size: (F, F)) -> Self {
-        let x_frac: F = convert(1.0 / (cells.0 - 1) as f64);
-        let y_frac: F = convert(1.0 / (cells.1 - 1) as f64);
+        let x_frac: F = size.0 / convert((cells.0 - 1) as f64);
+        let y_frac: F = size.1 / convert((cells.1 - 1) as f64);
         Heightmap {
             cells,
             len_frac: (x_frac, y_frac),
@@ -96,16 +96,15 @@ impl<F: RealField> Heightmap<F> {
     
     /// Construct a new Heightmap using the given evaluation function and with
     /// the given number of `cells` and `size`.
-    pub fn new_func<Func: Fn(F, F) -> F>(cells: (u32, u32), size: (F, F), func: Func) -> Self {
-        let half: F = convert(0.5);
-        let x_frac: F = convert(1.0 / (cells.0 - 1) as f64);
-        let y_frac: F = convert(1.0 / (cells.1 - 1) as f64);
+    pub fn from_surface(cells: (u32, u32), size: (F, F), surface: &dyn UnboundedSurface<F>) -> Self {
+        let x_frac: F = size.0 / convert((cells.0 - 1) as f64);
+        let y_frac: F = size.1 / convert((cells.1 - 1) as f64);
         let mut data = Vec::with_capacity(cells.0 as usize * cells.1 as usize);
         for iy in 0..cells.1 {
-            let y = (convert::<_, F>(iy as f64) * y_frac - half) * size.1;
+            let y = convert::<_, F>(iy as f64) * y_frac;
             for ix in 0..cells.0 {
-                let x = (convert::<_, F>(ix as f64) * x_frac - half) * size.0;
-                data.push(func(x, y));
+                let x = convert::<_, F>(ix as f64) * x_frac;
+                data.push(surface.get(x, y));
             }
         }
         
@@ -117,8 +116,7 @@ impl<F: RealField> Heightmap<F> {
         }
     }
     
-    pub fn add(&mut self, surface: &dyn UnboundedSurface<F>, mult: F) {
-        // TODO: fix coordinate offset
+    pub fn add_surface(&mut self, surface: &dyn UnboundedSurface<F>, mult: F) {
         for iy in 0..self.cells.1 {
             for ix in 0..self.cells.0 {
                 let (x, y) = self.coord_of(ix, iy);
@@ -146,16 +144,12 @@ impl<F: RealField> Heightmap<F> {
     // very high triangle count.
     pub fn to_trimesh(&self) -> TriMesh<F> {
         let one: F = na::one();
-        let half: F = convert(0.5);
         let (x_divs, y_divs) = (self.cells.0 - 1, self.cells.1 - 1);
         
         // code adapted from ncollide::procedural::unit_quad:
+        let (x_step, y_step) = self.len_frac;
         let tx_step = one / convert(x_divs as f64);
         let ty_step = one / convert(y_divs as f64);
-        let x_step = tx_step * self.size.0;
-        let y_step = ty_step * self.size.1;
-        let cw = half * self.size.0;
-        let ch = half * self.size.1;
 
         let mut vertices = Vec::new();
         let mut triangles = Vec::new();
@@ -167,10 +161,7 @@ impl<F: RealField> Heightmap<F> {
                 let fy: F = convert(iy as f64);
                 let fx: F = convert(ix as f64);
 
-                let v = Point3::new(
-                        fx * x_step - cw,
-                        fy * y_step - ch,
-                        self.get(iy, ix));
+                let v = Point3::new(fx * x_step, fy * y_step, self.get(iy, ix));
                 vertices.push(v);
                 tex_coords.push(Point2::new(one - fx * tx_step, one - fy * ty_step))
             }

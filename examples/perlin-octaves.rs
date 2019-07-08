@@ -24,18 +24,27 @@ fn main() {
             [g[0] * s, g[1] * s]
         };
         let surface = Perlin::new(larc, 1024, sampler).unwrap();
-        heightmap.add(&surface, ampl);
+        heightmap.add_surface(&surface, ampl);
         ampl *= 0.5;
         larc *= 2.0;
     }
     
-    let quad = heightmap.to_trimesh();
+    let mut quad = heightmap.to_trimesh();
+    for p in &mut quad.coords {
+        // Quad is created with z=height, but y is up in kiss3d's camera.
+        // We must rotate all three coords to keep the right side up.
+        let temp = p.z;
+        p.z = p.x;
+        p.x = p.y;
+        p.y = temp;
+    }
+    quad.recompute_normals();
+    
     let mut quad = window.add_trimesh(quad, Vector3::from_element(1.0));
     quad.enable_backface_culling(false);
     quad.set_color(0.75, 0.65, 0.4);
-    quad.set_local_rotation(UnitQuaternion::from_euler_angles(-consts::FRAC_PI_2, 0., 0.));
     
-    let mut camera = kiss3d::camera::ArcBall::new(Point3::new(0., 1., 15.), Point3::new(0., 0., 0.));
+    let mut camera = kiss3d::camera::ArcBall::new(Point3::new(50., 50., 0.), Point3::new(50., 0., 50.));
     
     while window.render_with_camera(&mut camera) {
     }
