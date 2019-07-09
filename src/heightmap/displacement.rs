@@ -43,13 +43,13 @@ pub fn midpoint_displacement<F, R: Rng, D: Distribution<F>>(
         distr: D) -> Result<(), Error>
 where F: RealField + Copy
 {
-    let cells = m.cells();
-    if cells.0 != cells.1 {
+    let dim = m.dim();
+    if dim.0 != dim.1 {
         return Err(Error::NotSquare);
     }
-    let len_m1 = cells.0 - 1;
+    let len_m1 = dim.0 - 1;
     let n = len_m1.trailing_zeros();
-    if cells.0 != 2u32.pow(n) + 1 {
+    if dim.0 != 2u32.pow(n) + 1 {
         return Err(Error::NotPowerOf2Plus1);
     }
     
@@ -125,13 +125,13 @@ where F: RealField + Copy
 {
     #![allow(non_snake_case)]
     
-    let cells = m.cells();
-    if cells.0 != cells.1 {
+    let dim = m.dim();
+    if dim.0 != dim.1 {
         return Err(Error::NotSquare);
     }
-    let len_m1 = cells.0 - 1;
+    let len_m1 = dim.0 - 1;
     let n = len_m1.trailing_zeros();
-    if cells.0 != 2u32.pow(n) + 1 {
+    if dim.0 != 2u32.pow(n) + 1 {
         return Err(Error::NotPowerOf2Plus1);
     }
     

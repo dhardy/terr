@@ -48,13 +48,13 @@ impl<F: RealField> Voronoi<F> {
     /// 
     /// TODO: optimise (current alg is naive)
     pub fn apply_to<D: FnMut(F, F) -> F>(&self, m: &mut Heightmap<F>, w: &[F], mut dist: D){
-        let cells = m.cells();
+        let dim = m.dim();
         let np = self.points.len();
         let nw = w.len().min(np);
         let mut d = vec![F::zero(); self.points.len()];
         
-        for iy in 0..cells.1 {
-            for ix in 0..cells.0 {
+        for iy in 0..dim.1 {
+            for ix in 0..dim.0 {
                 for i in 0..np {
                     let p = self.points[i];
                     let c = m.coord_of(ix, iy);

@@ -66,7 +66,7 @@ pub fn fault_displacement<F, R: Rng, D: Fn(F) -> F>(
 where F: RealField + SampleUniform
 {
     let half: F = convert(0.5);
-    let cells = m.cells();
+    let dim = m.dim();
     let size = m.size();
     
     // Sample fault-line via random direction vector and offset from centre
@@ -76,8 +76,8 @@ where F: RealField + SampleUniform
     let offset = rng.gen_range(width.0 - radius, width.1 + radius);
     let p = (half * size.0 + offset * v.0, half * size.1 + offset * v.1);
     
-    for iy in 0..cells.1 {
-        for ix in 0..cells.0 {
+    for iy in 0..dim.1 {
+        for ix in 0..dim.0 {
             // Take the dot-product of the vector from p to c
             let c = m.coord_of(ix, iy);
             let d = (c.0 - p.0) * v.0 + (c.1 - p.1) * v.1;
