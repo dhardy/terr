@@ -9,7 +9,7 @@
 //! Functionality based on heightmaps
 
 use nalgebra as na;
-use na::{convert, DMatrix, Dynamic, Vector3, RealField, geometry::{Point2, Point3}};
+use na::{convert, try_convert, DMatrix, Dynamic, Vector3, RealField, geometry::{Point2, Point3}};
 use ncollide3d::procedural::{TriMesh, IndexBuffer};
 use ncollide3d::shape::HeightField;
 
@@ -22,6 +22,7 @@ pub use voronoi::Voronoi;
 mod displacement;
 mod fault;
 mod voronoi;
+mod ncollide_impls;
 
 /// A heightmap represents a (terrian) surface via a grid of height offsets.
 /// 
@@ -41,6 +42,7 @@ pub struct Heightmap<F> {
     dim: (u32, u32),
     len_frac: (F, F),   // size / (dim - (1,1))
     size: (F, F),
+    range: (F, F),  // (min, max) height
     data: Vec<F>,
 }
 
@@ -66,6 +68,21 @@ impl<F: RealField> Heightmap<F> {
         (x, y)
     }
     
+    // Find the cell at the given point, if any.
+    // 
+    // (Note that a 'cell' is defined by the *lowest* of its four vertices.)
+    #[inline]
+    pub fn cell_at_coord(&self, x: F, y: F) -> Option<(u32, u32)> {
+        if F::zero() <= x && x <= self.size.0 {
+            if F::zero() <= y && y <= self.size.1 {
+                let cx = try_convert::<_, f64>(x / self.len_frac.0).unwrap() as u32;
+                let cy = try_convert::<_, f64>(y / self.len_frac.1).unwrap() as u32;
+                return Some((cx, cy));
+            }
+        }
+        None
+    }
+    
     /// Get value at the given vertex.
     /// 
     /// Requires `cx < self.dim().0 && cy < self.dim().1`.
@@ -83,6 +100,7 @@ impl<F: RealField> Heightmap<F> {
     pub fn set(&mut self, cx: u32, cy: u32, val: F) {
         assert!(cx < self.dim.0);
         assert!(cy < self.dim.1);
+        self.range = (self.range.0.min(val), self.range.1.max(val));
         self.data[(cx as usize) + (cy as usize) * (self.dim.0 as usize)] = val;
     }
 }
@@ -97,6 +115,7 @@ impl<F: RealField> Heightmap<F> {
             dim,
             len_frac: (x_frac, y_frac),
             size,
+            range: (F::zero(), F::zero()),
             data: vec![F::zero(); dim.0 as usize * dim.1 as usize],
         }
     }
@@ -119,6 +138,7 @@ impl<F: RealField> Heightmap<F> {
             dim,
             len_frac: (x_frac, y_frac),
             size,
+            range: range(&data),
             data,
         }
     }
@@ -131,6 +151,7 @@ impl<F: RealField> Heightmap<F> {
                 self.set(ix, iy, h + mult * surface.get(x, y));
             }
         }
+        self.range = range(&self.data);
     }
 }
 
@@ -202,4 +223,16 @@ impl<F: RealField> Heightmap<F> {
         mesh.recompute_normals();
         mesh
     }
+}
+
+// calculate (min, max) of data
+// Note: can't use Iterator::min/max because it requires Ord bound
+fn range<F: RealField>(s: &[F]) -> (F, F) {
+    let mut min = F::max_value();
+    let mut max = F::min_value();
+    for x in s.iter() {
+        min = min.min(*x);
+        max = max.max(*x);
+    }
+    (min, max)
 }
