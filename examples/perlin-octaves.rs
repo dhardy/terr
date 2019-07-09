@@ -1,8 +1,7 @@
 //! Generate a flat scene, nothing more.
 
 use terr::{heightmap::Heightmap, unbounded::Perlin};
-use std::f32::consts;
-use nalgebra::{Point3, UnitQuaternion, Vector3};
+use nalgebra::{Point3, Vector3};
 use kiss3d::{window::Window, light::Light};
 use rand::thread_rng;
 use rand_distr::{Distribution, UnitCircle, Exp1};
