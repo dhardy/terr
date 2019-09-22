@@ -54,12 +54,12 @@ impl<F: RealField> Shape<F> for Heightmap<F> {
     }
 
     #[inline]
-    fn as_ray_cast(&self) -> Option<&RayCast<F>> {
+    fn as_ray_cast(&self) -> Option<&dyn RayCast<F>> {
         Some(self)
     }
 
     #[inline]
-    fn as_point_query(&self) -> Option<&PointQuery<F>> {
+    fn as_point_query(&self) -> Option<&dyn PointQuery<F>> {
         unimplemented!()
 //         Some(self)
     }
