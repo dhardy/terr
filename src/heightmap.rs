@@ -83,6 +83,12 @@ impl<F: RealField> Heightmap<F> {
         None
     }
     
+    /// Get `(min, max)` altitudes
+    #[inline]
+    pub fn range(&self) -> (F, F) {
+        self.range
+    }
+    
     /// Get value at the given vertex.
     /// 
     /// Requires `cx < self.dim().0 && cy < self.dim().1`.
